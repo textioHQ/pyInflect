@@ -1,3 +1,5 @@
+Note: Public repos do not build on CircleCI and manual `make deploy-prod` is required to release any changes.
+
 # pyinflect<br/>
 **A python module for word inflections that works as a spaCy extension**.
 
