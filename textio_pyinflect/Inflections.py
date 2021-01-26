@@ -1,16 +1,18 @@
-import sys
 import logging
-from   copy import deepcopy
+import sys
+from copy import deepcopy
+
+from . import InflectionRules
+
 # Make this usable outside of Spacy
 try:
     import spacy
 except ImportError:
     pass
-from . import InflectionRules
 
 
 class Inflections(object):
-    ''' Class for inflecting words
+    """ Class for inflecting words
 
     This class loads the simplified AGID inflection data and uses it to inflect
     English words from their lemma, based on the supplied treebank tag.
@@ -18,24 +20,29 @@ class Inflections(object):
     Args:
         infl_fn (str): filename of the AGID simplified CSV file.
         overrides_fn (str): Optional CSV file with overrides to the AGID data.
-    '''
+    """
+
     def __init__(self, infl_fn, overrides_fn=None):
         self.infl_data = self._loadInflections(infl_fn)
         if overrides_fn:
             self.overrides = self._loadOverrides(overrides_fn)
-        if 'spacy' in sys.modules:
-            min_version = '2.0'
-            mv = min_version.split('.')
-            sv = spacy.__version__.split('.')
+        if "spacy" in sys.modules:
+            min_version = "2.0"
+            mv = min_version.split(".")
+            sv = spacy.__version__.split(".")
             if sv[0] > mv[0] or (sv[0] == mv[0] and sv[1] >= mv[1]):
-                spacy.tokens.Token.set_extension('inflect', method=self.spacyGetInfl, force=True)
+                spacy.tokens.Token.set_extension("inflect", method=self.spacyGetInfl, force=True)
             else:
-                logging.warning('Spacy extensions are disabled.  Spacy version is %s.  '
-                                'A minimum of %s is required', spacy.__version__, min_version)
+                logging.warning(
+                    "Spacy extensions are disabled.  Spacy version is %s.  "
+                    "A minimum of %s is required",
+                    spacy.__version__,
+                    min_version,
+                )
 
     # Get all inflections in the DB
     def getAllInflections(self, lemma, pos_type=None):
-        ''' Method for getting all inflections for a word.
+        """ Method for getting all inflections for a word.
 
         This is a standalone method that takes in a given lemma and returns
         all the associated inflections.
@@ -49,7 +56,7 @@ class Inflections(object):
             Method returns a dictionary of the treebank tags with a tuple of their associated forms.
             The capitalization style of the returned forms will be the same as the lemma
             An empty dictionary is returned if the lemma is not found in the database.
-        '''
+        """
         # Get the forms for the lemma from the main database
         forms = deepcopy(self.infl_data.get(lemma.lower(), {}))
         # Apply any overrides
@@ -70,7 +77,7 @@ class Inflections(object):
 
     # Get all inflections using the Inflection Rules
     def getAllInflectionsOOV(self, lemma, pos_type):
-        ''' Method for using Inflection rules to create a list of inflections for a word.
+        """ Method for using Inflection rules to create a list of inflections for a word.
 
         This is a standalone method that takes in a given lemma and returns all the associated
         inflections.
@@ -91,31 +98,41 @@ class Inflections(object):
             for pos_type = 'A' both JJx and RBx tags are returned).
 
             The capitalization style of the returned forms will be the same as the lemma.
-        '''
+        """
         caps_style = self._getCapsStyle(lemma)
-        if pos_type == 'V':
+        if pos_type == "V":
             rv = InflectionRules.buildRegVerb(lemma)
             dv = InflectionRules.buildDoubledVerb(lemma)
-            forms = {'VB':(lemma,), 'VBZ':(rv[0], dv[0]), 'VBN':(rv[1], dv[1]), \
-                     'VBD':(rv[1],dv[1]), 'VBG':(rv[2],dv[2])}
-        elif pos_type == 'A':
+            forms = {
+                "VB": (lemma,),
+                "VBZ": (rv[0], dv[0]),
+                "VBN": (rv[1], dv[1]),
+                "VBD": (rv[1], dv[1]),
+                "VBG": (rv[2], dv[2]),
+            }
+        elif pos_type == "A":
             ra = InflectionRules.buildRegAdjAdv(lemma)
             da = InflectionRules.buildDoubledAdjAdv(lemma)
-            forms = {'JJ':(lemma,), 'RB':lemma, \
-                     'JJR':(ra[0],da[0]), 'RBR':(ra[0],da[0]), \
-                     'JJS':(ra[1],da[1]), 'RBS':(ra[1],da[1])}
-        elif pos_type == 'N':
+            forms = {
+                "JJ": (lemma,),
+                "RB": lemma,
+                "JJR": (ra[0], da[0]),
+                "RBR": (ra[0], da[0]),
+                "JJS": (ra[1], da[1]),
+                "RBS": (ra[1], da[1]),
+            }
+        elif pos_type == "N":
             rn = InflectionRules.buildRegNoun(lemma)
             gn = InflectionRules.buildGrecNoun(lemma)
-            forms = {'NN':(lemma,), 'NNS':(rn[0],gn[0])}
+            forms = {"NN": (lemma,), "NNS": (rn[0], gn[0])}
         else:
-            raise ValueError('Unrecognized pos_type = %s' % pos_type)
+            raise ValueError("Unrecognized pos_type = %s" % pos_type)
         forms = self._applyCapsStyleToDict(forms, caps_style)
         return forms
 
     # Get all inflections in the DB
     def getInflection(self, lemma, tag, inflect_oov=False):
-        ''' Method for getting a lemma's inflection for a specific Penn Treebank tag.
+        """ Method for getting a lemma's inflection for a specific Penn Treebank tag.
 
         This is a standalone method that takes in a given lemma and returns
         all the associated inflection.
@@ -130,7 +147,7 @@ class Inflections(object):
             Method returns a tuple of the inflection(s).
             The capitalization style of the returned forms will be the same as the lemma
             None is returned if the lemma / tag is not found.
-        '''
+        """
         # Get the forms for the lemma from the main database
         # and use the treebank tag to find the correct return value
         # If we don't find anything in the dictionary, use the rules
@@ -145,7 +162,7 @@ class Inflections(object):
         return form
 
     def spacyGetInfl(self, token, tag, form_num=0, inflect_oov=False):
-        ''' Spacy extension method "inflect"
+        """ Spacy extension method "inflect"
 
         This function is not intended to be called directly.  It is an extension
         to Spacy as defined in the "set_extension" call in "__init__" above.
@@ -159,7 +176,7 @@ class Inflections(object):
         Returns:
             Method returns a string for the inflection
             The capitalization style of the returned forms will be the same as the lemma.
-        '''
+        """
         # Notes on Spacy lemma capitalization (as of 2.1.3):
         #   Spacy returns the lemmas for words that it knows in lowercase but will return
         #   words this it doesn't (like proper nouns) in the original form.
@@ -186,9 +203,9 @@ class Inflections(object):
         with open(fn) as f:
             for line in f:
                 line = line.strip()
-                x = line.split(',')
+                x = line.split(",")
                 # Forms may have multiple spellings separated by /
-                forms = [tuple(f.split('/')) for f in x[2:]]
+                forms = [tuple(f.split("/")) for f in x[2:]]
                 data = cls._loadInflLineToDict(data, x[0], x[1], forms)
         return data
 
@@ -199,9 +216,9 @@ class Inflections(object):
         with open(fn) as f:
             for line in f:
                 line = line.strip()
-                lemma, tag, forms = line.split(',')
-                forms = tuple(forms.split('/'))
-                entry = {tag:forms}
+                lemma, tag, forms = line.split(",")
+                forms = tuple(forms.split("/"))
+                entry = {tag: forms}
                 if lemma not in data:
                     data[lemma] = entry
                 else:
@@ -212,45 +229,44 @@ class Inflections(object):
     @staticmethod
     def _tagToAGIDPOSType(tag):
         pos_type = tag[0]
-        if pos_type in ['J', 'R']:
-            pos_type = 'A'
-        if tag == 'MD':
-            pos_type = 'V'
-        if pos_type not in ['V', 'A', 'N']:
-            raise ValueError('Unrecognized pos_type =%s.  Must be V, A or N' % pos_type)
+        if pos_type in ["J", "R"]:
+            pos_type = "A"
+        if tag == "MD":
+            pos_type = "V"
+        if pos_type not in ["V", "A", "N"]:
+            raise ValueError("Unrecognized pos_type =%s.  Must be V, A or N" % pos_type)
         return pos_type
 
     # Converts the pos_type (V, A or N) to a list of potential treebank tags
     @staticmethod
     def _posTypeToTags(pos_type):
-        if pos_type=='V':
-            return ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ', 'MD']
-        elif pos_type=='A':
-            return ['JJ', 'JJR', 'JJS', 'RB', 'RBR', 'RBS']
-        elif pos_type=='N':
-            return ['NN', 'NNS', 'NNP', 'NNPS']
+        if pos_type == "V":
+            return ["VB", "VBD", "VBG", "VBN", "VBP", "VBZ", "MD"]
+        elif pos_type == "A":
+            return ["JJ", "JJR", "JJS", "RB", "RBR", "RBS"]
+        elif pos_type == "N":
+            return ["NN", "NNS", "NNP", "NNPS"]
         else:
-            raise ValueError('Unrecognized pos_type =%s.  Must be V, A or N' % pos_type)
-
+            raise ValueError("Unrecognized pos_type =%s.  Must be V, A or N" % pos_type)
 
     # Get the capitalization style of the word
     @staticmethod
     def _getCapsStyle(word):
         if word.isupper():
-            return 'all_upper'
+            return "all_upper"
         elif word and word[0].isupper():
-            return 'first_upper'
+            return "first_upper"
         else:
-            return 'lower'
+            return "lower"
 
     # Replicate the capitalization style in the new word
     @staticmethod
     def _applyCapsStyle(word, style):
-        if style not in ['all_upper', 'first_upper', 'lower']:
-            raise ValueError('Invalid caps style = %s' % style)
-        if style=='all_upper':
+        if style not in ["all_upper", "first_upper", "lower"]:
+            raise ValueError("Invalid caps style = %s" % style)
+        if style == "all_upper":
             return word.upper()
-        elif style=='first_upper':
+        elif style == "first_upper":
             return word.capitalize()
         else:
             return word.lower()
@@ -278,28 +294,28 @@ class Inflections(object):
         if cls._isSpecialCase(data, lemma, pos_type):
             pass
         # Nouns.  Don't inflect proper nouns
-        elif pos_type=='N':
-            data[lemma]['NN']  = (lemma,)
-            data[lemma]['NNS'] = forms[0]
+        elif pos_type == "N":
+            data[lemma]["NN"] = (lemma,)
+            data[lemma]["NNS"] = forms[0]
         # Adjectives and Adverbs
-        elif pos_type=='A':
-            data[lemma]['JJ'] = (lemma,)
-            data[lemma]['RB'] = (lemma,)
-            data[lemma]['JJR'] = forms[0]
-            data[lemma]['RBR'] = forms[0]
-            data[lemma]['JJS'] = forms[1]
-            data[lemma]['RBS'] = forms[1]
+        elif pos_type == "A":
+            data[lemma]["JJ"] = (lemma,)
+            data[lemma]["RB"] = (lemma,)
+            data[lemma]["JJR"] = forms[0]
+            data[lemma]["RBR"] = forms[0]
+            data[lemma]["JJS"] = forms[1]
+            data[lemma]["RBS"] = forms[1]
         # Verbs
-        elif pos_type=='V':
-            data[lemma]['VB']  = (lemma,)
-            data[lemma]['VBP'] = (lemma,)
-            data[lemma]['VBD'] = forms[0]
-            if forms[1]==('<>',):
-                data[lemma]['VBN'] = forms[0]
+        elif pos_type == "V":
+            data[lemma]["VB"] = (lemma,)
+            data[lemma]["VBP"] = (lemma,)
+            data[lemma]["VBD"] = forms[0]
+            if forms[1] == ("<>",):
+                data[lemma]["VBN"] = forms[0]
             else:
-                data[lemma]['VBN'] = forms[1]
-            data[lemma]['VBG'] = forms[2]
-            data[lemma]['VBZ'] = forms[3]
+                data[lemma]["VBN"] = forms[1]
+            data[lemma]["VBG"] = forms[2]
+            data[lemma]["VBZ"] = forms[3]
         return data
 
     # Similar to _loadInflLineToDict but for specific oddball cases
@@ -307,60 +323,60 @@ class Inflections(object):
     @staticmethod
     def _isSpecialCase(data, lemma, pos_type):
         # only -> onliest has no comparative form
-        if lemma=='only' and pos_type=='A':
-            data[lemma]['JJS'] = ('onliest',)
-            data[lemma]['RBS'] = ('onliest',)
+        if lemma == "only" and pos_type == "A":
+            data[lemma]["JJS"] = ("onliest",)
+            data[lemma]["RBS"] = ("onliest",)
             return True
         # methinks -> methought (this is just wrong in the AGID)
-        elif lemma=='methinks' and pos_type=='V':
-            data[lemma]['VB']  = ('methinks',)
-            data[lemma]['VBD'] = ('methought',)
+        elif lemma == "methinks" and pos_type == "V":
+            data[lemma]["VB"] = ("methinks",)
+            data[lemma]["VBD"] = ("methought",)
             return True
         # modal verbs
-        elif lemma=='may' and pos_type=='V':
-            data[lemma]['MD']  = ('may', 'mayst', 'might')
+        elif lemma == "may" and pos_type == "V":
+            data[lemma]["MD"] = ("may", "mayst", "might")
             return True
-        elif lemma=='shall' and pos_type=='V':
-            data[lemma]['MD']  = ('shall', 'shalt', 'should')
+        elif lemma == "shall" and pos_type == "V":
+            data[lemma]["MD"] = ("shall", "shalt", "should")
             return True
         # Other verbs
         # The verb "be" had 2 ambigous forms for a give treebank tag: was/were and am/are
-        elif lemma=='be' and pos_type=='V':
-            data[lemma]['VB']  = ("be",)
-            data[lemma]['VBD'] = ('was', 'were')
-            data[lemma]['VBG'] = ('being',)
-            data[lemma]['VBN'] = ('been',)
-            data[lemma]['VBP'] = ('am', 'are')
-            data[lemma]['VBZ'] = ('is',)
+        elif lemma == "be" and pos_type == "V":
+            data[lemma]["VB"] = ("be",)
+            data[lemma]["VBD"] = ("was", "were")
+            data[lemma]["VBG"] = ("being",)
+            data[lemma]["VBN"] = ("been",)
+            data[lemma]["VBP"] = ("am", "are")
+            data[lemma]["VBZ"] = ("is",)
             return True
         # can
-        elif lemma=='can' and pos_type=='V':
-            data[lemma]['MD']  = ('can', 'canst', 'could')
-            data[lemma]['VB']  = ('can',)
-            data[lemma]['VBD'] = ('canned',)
-            data[lemma]['VBG'] = ('canning',)
-            data[lemma]['VBN'] = ('canned',)
-            data[lemma]['VBP'] = ('can',)
-            data[lemma]['VBZ'] = ('cans',)
+        elif lemma == "can" and pos_type == "V":
+            data[lemma]["MD"] = ("can", "canst", "could")
+            data[lemma]["VB"] = ("can",)
+            data[lemma]["VBD"] = ("canned",)
+            data[lemma]["VBG"] = ("canning",)
+            data[lemma]["VBN"] = ("canned",)
+            data[lemma]["VBP"] = ("can",)
+            data[lemma]["VBZ"] = ("cans",)
             return True
         # will
-        elif lemma=='will' and pos_type=='V':
-            data[lemma]['MD']  = ('will', 'wilt', 'would', 'wouldst')
-            data[lemma]['VB']  = ('will',)
-            data[lemma]['VBD'] = ('willed',)
-            data[lemma]['VBG'] = ('willing',)
-            data[lemma]['VBN'] = ('willed',)
-            data[lemma]['VBP'] = ('will',)
-            data[lemma]['VBZ'] = ('wills',)
+        elif lemma == "will" and pos_type == "V":
+            data[lemma]["MD"] = ("will", "wilt", "would", "wouldst")
+            data[lemma]["VB"] = ("will",)
+            data[lemma]["VBD"] = ("willed",)
+            data[lemma]["VBG"] = ("willing",)
+            data[lemma]["VBN"] = ("willed",)
+            data[lemma]["VBP"] = ("will",)
+            data[lemma]["VBZ"] = ("wills",)
             return True
         # with
-        elif lemma=='wit' and pos_type=='V':
-            data[lemma]['VB']  = ('wit',)
-            data[lemma]['VBD'] = ('wist',)
-            data[lemma]['VBG'] = ('witting',)
-            data[lemma]['VBN'] = ('wist',)
-            data[lemma]['VBP'] = ('wot', 'wost', 'wit', 'wite')
-            data[lemma]['VBZ'] = ('wot',)
+        elif lemma == "wit" and pos_type == "V":
+            data[lemma]["VB"] = ("wit",)
+            data[lemma]["VBD"] = ("wist",)
+            data[lemma]["VBG"] = ("witting",)
+            data[lemma]["VBN"] = ("wist",)
+            data[lemma]["VBP"] = ("wot", "wost", "wit", "wite")
+            data[lemma]["VBZ"] = ("wot",)
             return True
         else:
             return False

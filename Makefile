@@ -11,7 +11,7 @@ python := venv/bin/python
 pip := venv/bin/pip-s3
 aws := venv/bin/aws
 
-codefiles := $(shell find $(codedir) -name '*' -not \( -path '*__pycache__*' \))
+codefiles := $(shell find $(codedir) -name '*.py' -not \( -path '*__pycache__*' \))
 testfiles := $(shell find $(testdir) -name '*' -not \( -path '*__pycache__*' \))
 
 # cite: https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
