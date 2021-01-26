@@ -1,0 +1,10 @@
+awscli~=1.16
+# black requires explicit version number while it's in beta (b suffix)
+black==19.3b0
+flake8~=3.7
+isort~=4.3
+pytest~=5.1
+pytest-cov~=2.7
+
+# Private
+pypi-s3-upload~=1.1

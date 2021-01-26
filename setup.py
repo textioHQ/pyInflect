@@ -10,7 +10,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name='pyinflect',
+    name='textio-pyinflect',
     version=__version__,
     author='Brad Jascob',
     author_email='bjascob@msn.com',

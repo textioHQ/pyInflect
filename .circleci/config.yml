@@ -1,0 +1,79 @@
+version: 2
+
+workflows:
+  version: 2
+  build_and_deploy:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /[0-9]+(\.[0-9]+)*(-.*\.[0-9]+)?/
+      - test:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /[0-9]+(\.[0-9]+)*(-.*\.[0-9]+)?/
+      - deploy-version:
+          requires:
+            - test
+          filters:
+            tags:
+              only: /[0-9]+(\.[0-9]+)*(-.*\.[0-9]+)?/
+            branches:
+              ignore: /.*/
+      - deploy-tag:
+          requires:
+            - test
+          filters:
+            branches:
+              only: /.*/
+
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.6.1
+    steps:
+      - checkout
+      - restore_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "requirements_dev_frozen.txt" }}
+      - run: make --debug build
+      - save_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "requirements_dev_frozen.txt" }}
+          paths:
+            - "venv"
+
+  test:
+    docker:
+      - image: circleci/python:3.6.1
+    steps:
+      - checkout
+      - restore_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "requirements_dev_frozen.txt" }}
+      - run: make --debug code check=true
+      - run: mkdir -p /tmp/pytest
+      - run: mv pytest-out.xml /tmp/pytest/
+      - store_artifacts:
+          path: /tmp/pytest
+          destination: test_results
+      - store_artifacts:
+          path: htmlcov
+          destination: coverage
+
+  deploy-version:
+    docker:
+      - image: circleci/python:3.6.1
+    steps:
+      - checkout
+      - restore_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "requirements_dev_frozen.txt" }}
+      - run: (echo y) | make --debug deploy-prod
+
+  deploy-tag:
+    docker:
+      - image: circleci/python:3.6.1
+    steps:
+      - checkout
+      - restore_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "requirements_dev_frozen.txt" }}
+      - run: make --debug deploy

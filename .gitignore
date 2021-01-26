@@ -1,8 +1,30 @@
-*.pyc
+# Python build
 __pycache__
-*.swp
-build/
-dist/
-docs/build
-pyinflect.egg-info/
-.private/
+*.py[cod]
+/build/
+/dist/
+*.egg-info/
+*.egg
+.eggs/
+*.whl
+
+# Textio build
+venv*/
+pips3-master.tar.gz
+.venv
+.dev
+.assets
+.build
+.test
+.lint
+.code
+
+# Custom environment vars
+.env
+
+# Testing
+.cache/
+.coverage
+htmlcov/
+pytest-out.xml
+.pytest_cache/
