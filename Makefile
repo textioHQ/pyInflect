@@ -57,6 +57,7 @@ venv:
 .venv: venv
 	venv/bin/pip install --upgrade pip wheel setuptools --disable-pip-version-check
 	venv/bin/pip install --progress-bar off "awscli~=1.0"
+	$(aws) sts get-caller-identity
 	$(aws) s3 cp s3://textio-pypi-us-west-2/pypi/0/dev/pips3/pips3-master.tar.gz .
 	venv/bin/pip install --progress-bar off pips3-master.tar.gz
 	$(pip) install --upgrade pips3
